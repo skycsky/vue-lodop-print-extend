@@ -1,17 +1,67 @@
 import getLodop from './LodopFuncs'
 import cloneDeep from 'lodash/cloneDeep'
-import { tableTempTohtml, imageTempTohtml, strTempToValue, htmlTempTohtml } from './tools'
+import {
+  tableTempTohtml,
+  imageTempTohtml,
+  strTempToValue,
+  htmlTempTohtml,
+} from './tools'
 
 let strCompanyName = ''
 let strLicense = ''
 let strLicenseA = ''
 let strLicenseB = ''
 
-export default { print, preview, previewTemp, setLicenses }
+export default {
+  print,
+  preview,
+  previewTemp,
+  setLicenses,
+  getPrintList,
+  setPrinter,
+}
+
+/**
+ * 获取打印机列表
+ */
+function getPrintList() {
+  let LODOP = getLodop()
+  if (!LODOP) {
+    return
+  }
+
+  let count = LODOP.GET_PRINTER_COUNT()
+  let prints = []
+  Array(count)
+    .fill(null)
+    .map((...args) => {
+      prints.push({
+        index: args[1],
+        label: LODOP.GET_PRINTER_NAME(args[1]),
+      })
+      return {
+        index: args[1],
+        label: LODOP.GET_PRINTER_NAME(args[1]),
+      }
+    })
+  return prints
+}
+
+/**
+ * 设置要使用的打印机
+ * @param {*} LODOP lodop对象
+ * @param {*} index 打印机列表索引
+ */
+function setPrinter(LODOP, index) {
+  if (!LODOP) {
+    LODOP = getLodop()
+  }
+  LODOP.SET_PRINTER_INDEX(index)
+}
 
 /**
  * 设置Lodop打印软件产品注册信息
- * @param {*} licenseInfo 
+ * @param {*} licenseInfo
  */
 function setLicenses(licenseInfo) {
   strCompanyName = licenseInfo.strCompanyName || ''
@@ -23,9 +73,20 @@ function setLicenses(licenseInfo) {
  * 打印功能
  * @param {*Object} temp 打印模板
  * @param {*Array} data 打印数据
+ * @param {*String} mode 打印模式
+ * @param {*Number} index 打印机索引
  */
-function print(temp, data) {
-  let LODOP = _CreateLodop(temp.title, temp.width, temp.height, temp.pageWidth, temp.pageHeight)
+function print(temp, data, mode, index) {
+  let LODOP = _CreateLodop(
+    temp.title,
+    temp.width,
+    temp.height,
+    temp.pageWidth,
+    temp.pageHeight,
+    mode,
+    index,
+  )
+
   let tempItems = cloneDeep(temp.tempItems)
   let printContent = _TempParser(tempItems, data)
   if (printContent.length > 1) {
@@ -51,9 +112,19 @@ function print(temp, data) {
  * 打印预览功能
  * @param {*Object} temp 打印模板
  * @param {*Array} data 打印数据
+ * @param {*String} mode 打印模式
+ * @param {*Number} index 打印机索引
  */
-function preview(temp, data) {
-  let LODOP = _CreateLodop(temp.title, temp.width, temp.height, temp.pageWidth, temp.pageHeight)
+function preview(temp, data, mode, index) {
+  let LODOP = _CreateLodop(
+    temp.title,
+    temp.width,
+    temp.height,
+    temp.pageWidth,
+    temp.pageHeight,
+    mode,
+    index,
+  )
   let tempItems = cloneDeep(temp.tempItems)
   let printContent = _TempParser(tempItems, data)
   if (data.length > 1) {
@@ -78,18 +149,27 @@ function preview(temp, data) {
 /**
  * 模板预览功能
  * @param {*Object} temp 打印模板
+ * @param {*String} mode 打印模式
+ * @param {*Number} index 打印机索引
  */
-function previewTemp(temp) {
-  let LODOP = _CreateLodop(temp.title, temp.width, temp.height, temp.pageWidth, temp.pageHeight)
+function previewTemp(temp, mode, index) {
+  let LODOP = _CreateLodop(
+    temp.title,
+    temp.width,
+    temp.height,
+    temp.pageWidth,
+    temp.pageHeight,
+    mode,
+    index,
+  )
 
   let printContent = _TempParser(temp.tempItems)
-  printContent[0].forEach(printItem => {
+  printContent[0].forEach((printItem) => {
     _AddPrintItem(LODOP, printItem)
   })
   let flag = LODOP.PREVIEW()
   return flag
 }
-
 
 /**
  * LODOP 根据属性创建打印
@@ -101,16 +181,33 @@ function previewTemp(temp) {
  * @param top 可视区域上边距(单位px)
  * @param left 可视区域左边距(单位px)
  */
-function _CreateLodop(pageName, width, height, pageWidth = 0, pageHeight = 0, top = 0, left = 0) {
+function _CreateLodop(
+  pageName,
+  width,
+  height,
+  pageWidth = 0,
+  pageHeight = 0,
+  top = 0,
+  left = 0,
+  mode = 'Auto-Width',
+  index = 0,
+) {
   let LODOP = getLodop()
 
+  LODOP.SET_PRINT_MODE('PRINT_PAGE_PERCENT', mode)
+  LODOP.SET_PRINTER_INDEX(index)
   // console.log(strCompanyName, strLicense, strLicenseA, strLicenseB)
 
   // 设置软件产品注册信息
   LODOP.SET_LICENSES(strCompanyName, strLicense, strLicenseA, strLicenseB)
 
   LODOP.PRINT_INITA(top, left, width, height, pageName)
-  LODOP.SET_PRINT_PAGESIZE(1, pageWidth ? pageWidth + 'mm' : 0, pageHeight ? pageHeight + 'mm' : 0, '')
+  LODOP.SET_PRINT_PAGESIZE(
+    1,
+    pageWidth ? pageWidth + 'mm' : 0,
+    pageHeight ? pageHeight + 'mm' : 0,
+    '',
+  )
 
   return LODOP
 }
@@ -125,13 +222,13 @@ function _TempParser(tempItem, data) {
   let temp = cloneDeep(tempItem)
   //修改模板答应项顺序
   //将自适应高度的打印项（item.style.AutoHeight == true）放在第一项
-  let flag = temp.findIndex(item => item.style.AutoHeight)
+  let flag = temp.findIndex((item) => item.style.AutoHeight)
   if (flag != -1) {
     let autoItem = temp[flag]
     temp.splice(flag, 1)
     temp.unshift(autoItem)
     // 处理位于自适应打印项下方的打印项
-    temp.forEach(item => {
+    temp.forEach((item) => {
       // 位于自适应高度项下的打印项修改top、left,并添加关联属性（style.LinkedItem）
       if (item.top > autoItem.top && item.style.ItemType == 0) {
         item.top = item.top - autoItem.top - autoItem.height
@@ -144,8 +241,8 @@ function _TempParser(tempItem, data) {
   if (data && data.length > 0) {
     // 解析打印模板和数据，生成生成打印内容
     let tempContent = []
-    data.forEach(dataItem => {
-      let conItem = temp.map(tempItem => {
+    data.forEach((dataItem) => {
+      let conItem = temp.map((tempItem) => {
         let item = cloneDeep(tempItem)
         if (item.name) {
           item.defaultValue = dataItem[item.name]
@@ -160,7 +257,6 @@ function _TempParser(tempItem, data) {
     return [temp]
   }
 }
-
 
 /**
  * 添加打印项
@@ -185,7 +281,7 @@ function _AddPrintItem(LODOP, tempItem, pageIndex = 0) {
         printItem.left,
         printItem.width,
         printItem.height,
-        printItem.value
+        printItem.value,
       )
       break
     case 'bar-code':
@@ -195,7 +291,7 @@ function _AddPrintItem(LODOP, tempItem, pageIndex = 0) {
         printItem.width,
         printItem.height,
         lodopStyle.codeType,
-        printItem.value
+        printItem.value,
       )
       break
     case 'braid-html':
@@ -207,7 +303,7 @@ function _AddPrintItem(LODOP, tempItem, pageIndex = 0) {
             printItem.left,
             printItem.width,
             'BottomMargin:' + lodopStyle.BottomMargin + 'mm',
-            html
+            html,
           )
         } else {
           LODOP.ADD_PRINT_HTM(
@@ -215,22 +311,25 @@ function _AddPrintItem(LODOP, tempItem, pageIndex = 0) {
             printItem.left,
             printItem.width,
             printItem.height,
-            html
+            html,
           )
-
         }
       }
       break
     case 'braid-table':
       {
-        let html = tableTempTohtml(printItem.columns ? printItem.columns : [], printItem.defaultValue, printItem.style)
+        let html = tableTempTohtml(
+          printItem.columns ? printItem.columns : [],
+          printItem.defaultValue,
+          printItem.style,
+        )
         if (lodopStyle.AutoHeight) {
           LODOP.ADD_PRINT_TABLE(
             printItem.top,
             printItem.left,
             printItem.width,
             'BottomMargin:' + lodopStyle.BottomMargin + 'mm',
-            html
+            html,
           )
         } else {
           LODOP.ADD_PRINT_TABLE(
@@ -238,9 +337,8 @@ function _AddPrintItem(LODOP, tempItem, pageIndex = 0) {
             printItem.left,
             printItem.width,
             printItem.height,
-            html
+            html,
           )
-
         }
       }
       break
@@ -252,24 +350,24 @@ function _AddPrintItem(LODOP, tempItem, pageIndex = 0) {
           printItem.left,
           printItem.width,
           printItem.height,
-          html
+          html,
         )
       }
       break
-    default: ''
+    default:
+      ''
   }
   // 设置打印项样式
-  Object.keys(lodopStyle).forEach(key => {
+  Object.keys(lodopStyle).forEach((key) => {
     LODOP.SET_PRINT_STYLEA(0, key, lodopStyle[key])
   })
   // 设置默认LodopStyle
   let defaultLodopStyle = printItem.lodopStyle
   if (defaultLodopStyle) {
-    Object.keys(defaultLodopStyle).forEach(key => {
+    Object.keys(defaultLodopStyle).forEach((key) => {
       LODOP.SET_PRINT_STYLEA(0, key, defaultLodopStyle[key])
     })
   }
-
 }
 
 /**
@@ -279,14 +377,15 @@ function _AddPrintItem(LODOP, tempItem, pageIndex = 0) {
  */
 function _createLodopStyle(style) {
   let lodopStyle = {
-    zIndex: style.zIndex
+    zIndex: style.zIndex,
   }
 
   for (let key in style) {
     if (['Bold', 'Italic', 'Underline', 'ShowBarText'].indexOf(key) > -1) {
       lodopStyle[key] = style[key] ? 1 : 0
     } else if (key === 'Alignment') {
-      lodopStyle[key] = style[key] == 'left' ? 1 : style[key] == 'center' ? 2 : 3
+      lodopStyle[key] =
+        style[key] == 'left' ? 1 : style[key] == 'center' ? 2 : 3
     } else {
       lodopStyle[key] = style[key]
     }

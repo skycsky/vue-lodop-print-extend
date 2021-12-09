@@ -1,7 +1,57 @@
-# kr-print-designer
+# vue-lodop-print-extend
 
 ## 简介
 
+基于 kr-print-designer 扩展:
+
+- 1.指定打印页面模式为整宽固定比例（LODOP.SET_PRINT_MODE('PRINT_PAGE_PERCENT', 'Auto-Width')）
+- 2.新增多打印机模式下指定打印机 API: setPrinter
+- 3.新增获取打印机列表 API：getPrintList
+
+## 引入
+
+main.js
+
+```javascript
+import Vue from 'vue'
+import KrPrintDesigner from 'vue-lodop-print-extend'
+import 'vue-lodop-print-extend/lib/vue-lodop-print-extend.css'
+
+Vue.use(KrPrintDesigner)
+```
+
+demo.vue
+
+```html
+<template>
+  <div id="app">
+    <kr-print-designer
+      :temp-value="value"
+      :widget-options="widgets"
+      :lodop-license="licenseInfo"
+      @save="handleSave"
+    />
+  </div>
+</template>
+```
+
+使用示例：
+
+```javascript
+let template = {} // 存储好的模板
+let data = {} // 需填入的数据
+let printList = this.$lodop.getPrintList()
+let printer = null
+printList.map((print) => {
+  if (print.label.indexOf('your printer name') >= 0) {
+    printer = print
+  }
+})
+this.$lodop.setPrinter(printer.value)
+this.$lodop.print(template, data)
+```
+
+以下为原 kr-print-designer 文档说明：
 一个基于 Vue、ElementUi、C-Lodop 的打印模板设计器。实现打印模板的设计、预览和打印功能。[示例](https://myliuxia.github.io/demo/kr-print-designer/index.html)
 
 ## 安装
@@ -19,11 +69,11 @@ npm install kr-print-designer
 main.js
 
 ```javascript
-import Vue from "vue";
-import KrPrintDesigner from "kr-print-designer";
-import "kr-print-designer/lib/kr-print-designer.css";
+import Vue from 'vue'
+import KrPrintDesigner from 'kr-print-designer'
+import 'kr-print-designer/lib/kr-print-designer.css'
 
-Vue.use(KrPrintDesigner);
+Vue.use(KrPrintDesigner)
 ```
 
 demo.vue
@@ -45,16 +95,16 @@ lodop 打印/预览及设置 lodop 注册信息方法使用
 
 ```javascript
 // 直接打印
-this.$lodop.print(temp, data);
+this.$lodop.print(temp, data)
 
 // 预览打印内容
-this.$lodop.preview(temp, data);
+this.$lodop.preview(temp, data)
 
 // 预览打印模板
-this.$lodop.previewTemp(temp);
+this.$lodop.previewTemp(temp)
 
 // 设置Lodop产品注册信息
-this.$lodop.setLicenses(licenseInfo);
+this.$lodop.setLicenses(licenseInfo)
 ```
 
 ## Attributes
@@ -383,14 +433,14 @@ widgetOptions 为设计打印模板的打印项配置， 打印项有多种类�
 
 ```javascript
 let licenseInfo = {
-  strCompanyName: "某某某公司",
-  strLicense: "******",
-  strLicenseA: "",
-  strLicenseB: ""
-};
+  strCompanyName: '某某某公司',
+  strLicense: '******',
+  strLicenseA: '',
+  strLicenseB: '',
+}
 
 // 设置Lodop产品注册信息
-this.$lodop.setLicenses(licenseInfo);
+this.$lodop.setLicenses(licenseInfo)
 ```
 
 #### licenseInfo 对象值说明：
