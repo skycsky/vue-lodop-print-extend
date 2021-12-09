@@ -83,6 +83,8 @@ function print(temp, data, mode, index) {
     temp.height,
     temp.pageWidth,
     temp.pageHeight,
+    0,
+    0,
     mode,
     index,
   )
@@ -122,6 +124,8 @@ function preview(temp, data, mode, index) {
     temp.height,
     temp.pageWidth,
     temp.pageHeight,
+    0,
+    0,
     mode,
     index,
   )
@@ -159,6 +163,8 @@ function previewTemp(temp, mode, index) {
     temp.height,
     temp.pageWidth,
     temp.pageHeight,
+    0,
+    0,
     mode,
     index,
   )
